@@ -1,27 +1,36 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
-}
+  --color-primary: theme('colors.primary');
+  --color-primary-content: theme('colors.primary-content');
+  --color-primary-dark: theme('colors.primary-dark');
+  --color-primary-light: theme('colors.primary-light');
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
-  }
+  --color-secondary: theme('colors.secondary');
+  --color-secondary-content: theme('colors.secondary-content');
+  --color-secondary-dark: theme('colors.secondary-dark');
+  --color-secondary-light: theme('colors.secondary-light');
+
+  --color-background: theme('colors.background');
+  --color-foreground: theme('colors.foreground');
+  --color-border: theme('colors.border');
+
+  --color-copy: theme('colors.copy');
+  --color-copy-light: theme('colors.copy-light');
+  --color-copy-lighter: theme('colors.copy-lighter');
+
+  --color-success: theme('colors.success');
+  --color-warning: theme('colors.warning');
+  --color-error: theme('colors.error');
+
+  --color-success-content: theme('colors.success-content');
+  --color-warning-content: theme('colors.warning-content');
+  --color-error-content: theme('colors.error-content');
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: var(--color-foreground);
+  background-color: var(--color-background);
 }
