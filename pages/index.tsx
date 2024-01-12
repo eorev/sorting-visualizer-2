@@ -1,10 +1,11 @@
+import SortingVisualizer from "@/app/components/SortingVisualizer";
 
 const HomePage: React.FC = () => {
     return (
         <div>
             <h1>Sorting Visualizer</h1>
             <p>Welcome to the Sorting Visualizer!</p>
-            {/* Add your sorting visualizer component here */}
+            <SortingVisualizer />  
         </div>
     );
 };
