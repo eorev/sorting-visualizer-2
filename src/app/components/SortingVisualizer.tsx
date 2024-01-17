@@ -11,16 +11,22 @@ interface AppNotification {
     text: string;
 }
 
+interface QuickSortAction {
+    type: string;
+    payload: any;
+}
+
 const SortingVisualizer: React.FC = () => {
     const [array, setArray] = useState<number[]>([]);
     const [selectedAlgorithm, setSelectedAlgorithm] = useState<string>("");
-    const [indices, setIndices] = useState<{ pivot: number; compared: number[] }>({ pivot: -1, compared: [] });
+    const [currentSwappers, setCurrentSwappers] = useState<number[]>([]);
+    const [pivotIndex, setPivotIndex] = useState<number | null>(null);
+    const [isSorted, setIsSorted] = useState<boolean[]>(Array(50).fill(false));
     const [playSwapSound] = useSound(swapSound);
     const [isPaused, setIsPaused] = useState(false);
     const [delay, setDelay] = useState(100);
     const [isRunning, setIsRunning] = useState(false);
     const pauseRef = useRef(isPaused);
-    const [isSorted, setIsSorted] = useState(false);
     const [notifications, setNotifications] = useState<AppNotification[]>([]);
 
     useEffect(() => {
@@ -34,35 +40,61 @@ const SortingVisualizer: React.FC = () => {
     const generateRandomArray = () => {
         const newArray = Array.from({ length: 50 }, () => Math.floor(Math.random() * 100));
         setArray(newArray);
-        setIsSorted(false); // Reset sorted state
+        setIsSorted(Array(50).fill(false)); // Correct usage
     };
 
     const addNotification = (text: string) => {
         setNotifications((prev) => [...prev, { id: uuidv4(), text }]);
     };
 
-    const handleRunPauseResume = () => {
-        if (!selectedAlgorithm || array.length === 0 || isSorted) return;
+    const handleRunPauseResume = async () => {
+        if (!selectedAlgorithm || array.length === 0 || isSorted.every((v) => v)) return;
 
         if (selectedAlgorithm === "quickSort") {
             if (!isRunning) {
                 setIsRunning(true);
                 setIsPaused(false);
                 pauseRef.current = false;
-                QuickSort([...array], 0, array.length - 1, setArray, setIndices, playSwapSound, delay, pauseRef)
-                    .then(() => {
-                        setIsRunning(false);
-                        setIsPaused(false);
-                        setIsSorted(true);
-                        addNotification("Sorting Completed!");
-                    });
+
+                const actions = await QuickSort([...array], 0, array.length - 1);
+
+                for (const action of actions) {
+                    if (isPaused) break;
+                    await handleAction(action);
+                }
+
+                setIsRunning(false);
+                setIsPaused(false);
+                setIsSorted(Array(array.length).fill(true)); // Mark all as sorted with an array of true
+                addNotification("Sorting Completed!");
+            } else if (isPaused) {
+                setIsPaused(false);
+                pauseRef.current = false;
+            } else {
+                setIsPaused(true);
+                pauseRef.current = true;
             }
         }
     };
 
+    const handleAction = async (action: QuickSortAction) => {
+        switch (action.type) {
+            case 'setPivot':
+                setPivotIndex(action.payload);
+                break;
+            case 'swap':
+                setCurrentSwappers(action.payload.indices);
+                setArray(action.payload.array);
+                playSwapSound();
+                await new Promise(resolve => setTimeout(resolve, delay));
+                break;
+        }
+    };
+
+
     const handleAlgorithmChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setSelectedAlgorithm(e.target.value);
-        setIsSorted(false); // Reset sorted state
+        setIsSorted(Array(array.length).fill(false));
     };
 
     return (
@@ -83,12 +115,11 @@ const SortingVisualizer: React.FC = () => {
             <div className='array--row w-full flex flex-row flex-wrap-nowrap overflow-auto' style={{ flexGrow: 1 }}>
                 {array && array.map((value, index) => {
                     const barHeight = (value / 100) * 100;
-                    let backgroundColor = "#4deda1";
-                    if (index === indices.pivot) {
-                        backgroundColor = "red";
-                    } else if (indices.compared.includes(index)) {
-                        backgroundColor = "blue";
-                    }
+                    let backgroundColor = isSorted[index] ? "rgba(169, 92, 232, 0.8)" : // Sorted
+                        currentSwappers.includes(index) ? "rgba(219, 57, 57, 0.8)" : // Swapping
+                            (index === pivotIndex) ? "rgba(237, 234, 59, 0.8)" : // Pivot
+                                "rgba(66, 134, 244, 0.8)"; // Default
+
                     return (
                         <div key={index} className='flex flex-col items-center mx-1' style={{ width: `${100 / array.length}%`, maxHeight: "100%", height: `${barHeight}%`, backgroundColor }}>
                             <span className='text-xs text-white'>{value}</span>
