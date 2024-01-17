@@ -1,52 +1,39 @@
-async function QuickSort(
-    arr: number[],
-    start: number,
-    end: number,
-    setArray: React.Dispatch<React.SetStateAction<number[]>>,
-    setIndices: React.Dispatch<React.SetStateAction<{ pivot: number, compared: number[] }>>,
-    playSwapSound: () => void,
-    delay: number,
-    pauseRef: React.MutableRefObject<boolean>
-) {
-    if (start < end) {
-        let pivot = await partition(arr, start, end, setArray, setIndices, playSwapSound, delay, pauseRef);
-        if (pauseRef.current) return;  // Check if paused between recursive calls
-        await QuickSort(arr, start, pivot - 1, setArray, setIndices, playSwapSound, delay, pauseRef);
-        if (pauseRef.current) return;  // Check if paused between recursive calls
-        await QuickSort(arr, pivot + 1, end, setArray, setIndices, playSwapSound, delay, pauseRef);
-    }
+// Action Types
+interface Action {
+    type: string;
+    payload: any;
 }
 
-async function partition(
-    arr: number[],
-    start: number,
-    end: number,
-    setArray: React.Dispatch<React.SetStateAction<number[]>>,
-    setIndices: React.Dispatch<React.SetStateAction<{ pivot: number, compared: number[] }>>,
-    playSwapSound: () => void,
-    delay: number,
-    pauseRef: React.MutableRefObject<boolean>
-) {
+async function quickSort(arr: number[], start: number, end: number): Promise<Action[]> {
+    let actions: Action[] = [];
+    if (start < end) {
+        let pivot = await partition(arr, start, end, actions);
+        actions = actions.concat(await quickSort(arr, start, pivot - 1));
+        actions = actions.concat(await quickSort(arr, pivot + 1, end));
+    }
+    return actions;
+}
+
+async function partition(arr: number[], start: number, end: number, actions: Action[]): Promise<number> {
     let pivotValue = arr[end];
     let pivotIndex = start;
 
+    // Add action to set pivot index instead of calling setPivotIndex
+    actions.push({ type: 'setPivot', payload: end });
+
     for (let i = start; i < end; i++) {
-        while (pauseRef.current) {  // Pause logic
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
         if (arr[i] < pivotValue) {
-            [arr[i], arr[pivotIndex]] = [arr[pivotIndex], arr[i]]; // Swap if element is less than pivot
+            [arr[i], arr[pivotIndex]] = [arr[pivotIndex], arr[i]];
             pivotIndex++;
-            playSwapSound();
-            setArray([...arr]);
-            setIndices({ pivot: end, compared: [i] });
-            await new Promise(resolve => setTimeout(resolve, delay));
+            actions.push({ type: 'swap', payload: { indices: [i, pivotIndex], array: [...arr] } });
         }
     }
 
-    [arr[pivotIndex], arr[end]] = [arr[end], arr[pivotIndex]]; // Swap the pivot to its correct position
-    setArray([...arr]);
+    [arr[pivotIndex], arr[end]] = [arr[end], arr[pivotIndex]];
+    actions.push({ type: 'swap', payload: { indices: [pivotIndex, end], array: [...arr] } });
+
     return pivotIndex;
 }
 
-export default QuickSort;
+
+export default quickSort;
